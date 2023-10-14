@@ -92,6 +92,7 @@ async def control_sections(lecture, professor_connection, student_connections, s
     
     """
     async for message in professor_connection:
+        event = json.loads(message)
         if event['type'] == 'back':
             if lecture['curr_section'] == 0:
                 continue
