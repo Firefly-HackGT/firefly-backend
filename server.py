@@ -83,7 +83,7 @@ async def control_sections(sections, curr, professor_connection, student_connect
     Receive and move to the next section of the professor.
     
     """
-    for message in professor_connection:
+    async for message in professor_connection:
         curr += 1
         event = {
             "type": "next_section",
