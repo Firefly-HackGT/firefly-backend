@@ -110,13 +110,13 @@ async def control_sections(lecture, professor_connection, student_connections, s
                     "length": len(lecture['sections'])
                 }   
                 await student_connections[student_name].send(json.dumps(event))
-                section_ratings = [student_rating[lecture['curr_section']] for student_rating in student_ratings.values()]
-                average_rating = round(sum(section_ratings) / len(section_ratings), 1)
-                event = {
-                    "type": "new_overall_rating",
-                    "overall_rating": average_rating
-                }
-                await professor_connection.send(json.dumps(event))
+            section_ratings = [student_rating[lecture['curr_section']] for student_rating in student_ratings.values()]
+            average_rating = round(sum(section_ratings) / len(section_ratings), 1)
+            event = {
+                "type": "new_overall_rating",
+                "overall_rating": average_rating
+            }
+            await professor_connection.send(json.dumps(event))
         else:
             # If the sections are over send to students and prof sections < 3 rating
             for student_name in student_connections.keys():
