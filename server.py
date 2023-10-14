@@ -27,8 +27,8 @@ async def get_current_section(student_connection, section, curr, length):
     """
     event = {
         "type": "next_section",
-        "name": section.description,
-        "description": section.description,
+        "name": section['name'],
+        "description": section['description'],
         "curr": curr,
         "length": length
     }
@@ -41,7 +41,7 @@ async def rate(websocket, index, students_ratings, name, professor_connection):
     """
     async for message in websocket:
         event = json.loads(message)
-        students_ratings[name][index] = event.rating
+        students_ratings[name][index] = event['rating']
         section_ratings = [student_rating[index] for student_rating in students_ratings.values()]
         average_rating = sum(section_ratings) / len(section_ratings)
         event = {
@@ -87,15 +87,15 @@ async def control_sections(sections, curr, professor_connection, student_connect
         curr += 1
         event = {
             "type": "next_section",
-            "name": sections[curr].description,
-            "description": sections[curr].description,
+            "name": sections[curr]['name'],
+            "description": sections[curr]['description'],
             "curr": curr,
             "length": len(sections)
         }
         websockets.broadcast(student_connections, json.dumps(event))
 
 
-async def start(websocket, sections):
+async def start_lecture(websocket, sections):
     """
     Handle a connection from the professor to start the lecture.
 
@@ -130,11 +130,11 @@ async def handler(websocket):
     message = await websocket.recv()
     event = json.loads(message)
 
-    if event.type == "join_lecture":
+    if event['type'] == "join_lecture":
         # Student joining session
         await join(websocket, event["session"], event["name"])
-    elif event.type == "init_lecture":
-        await start(event['sections'])
+    elif event['type'] == "init_lecture":
+        await start_lecture(event['sections'])
 
 
 async def health_check(path, request_headers):
