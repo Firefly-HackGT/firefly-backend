@@ -134,7 +134,7 @@ async def handler(websocket):
         # Student joining session
         await join(websocket, event["session"], event["name"])
     elif event['type'] == "init_lecture":
-        await start_lecture(event['sections'])
+        await start_lecture(websocket, event['sections'])
 
 
 async def health_check(path, request_headers):
