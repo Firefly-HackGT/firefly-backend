@@ -1,5 +1,6 @@
 import asyncio
 import http
+import secrets
 import signal
 import json
 from Section import Section
@@ -19,7 +20,7 @@ async def error(websocket, error_type):
     }
     await websocket.send(json.dumps(event))
 
-async def get_current_section(websocket, section, curr, length):
+async def get_current_section(student_connection, section, curr, length):
     """
     Send the current section to the newly joined student.
 
@@ -31,7 +32,7 @@ async def get_current_section(websocket, section, curr, length):
         "curr": curr,
         "length": length
     }
-    await websocket.send(json.dumps(event))
+    await student_connection.send(json.dumps(event))
 
 async def rate(websocket, index, students_ratings, name, professor_connection):
     """
@@ -57,7 +58,7 @@ async def join(websocket, session_key, name):
     """
     # Find the lecture
     try:
-        professor_connection, student_connections, sections, curr, student_ratings = SESSIONS[session_key]
+        professor_connection, student_connections, sections, curr_section_index, student_ratings = SESSIONS[session_key]
         if name in student_ratings:
             raise LookupError() 
         student_ratings[name] = [1]*len(sections)
@@ -71,11 +72,54 @@ async def join(websocket, session_key, name):
     student_connections.add(websocket)
     try:
         # Send the current section the lecture is in.
-        await get_current_section(websocket, sections[curr], curr, len(sections))
+        await get_current_section(websocket, sections[curr_section_index], curr_section_index, len(sections))
         # Receive and process rating from student.
-        await rate(websocket, curr, student_ratings, name, professor_connection)
+        await rate(websocket, curr_section_index, student_ratings, name, professor_connection)
     finally:
         student_connections.remove(websocket)
+
+async def control_sections(sections, curr, professor_connection, student_connections):
+    """
+    Receive and move to the next section of the professor.
+    
+    """
+    for message in professor_connection:
+        curr += 1
+        event = {
+            "type": "next_section",
+            "name": sections[curr].description,
+            "description": sections[curr].description,
+            "curr": curr,
+            "length": len(sections)
+        }
+        websockets.broadcast(student_connections, json.dumps(event))
+
+
+async def start(websocket, sections):
+    """
+    Handle a connection from the professor to start the lecture.
+
+    """
+    student_ratings = {}
+    student_connections = {}
+    professor_connection = websocket
+    curr = 0
+
+    session_key = secrets.token_urlsafe(5)
+    SESSIONS[session_key] = professor_connection, student_connections, sections, curr, student_ratings
+
+    try:
+        # Send the secret access tokens to the browser of the first player,
+        # where they'll be used for building "join" and "watch" links.
+        event = {
+            "type": "get_session_key",
+            "session_key": session_key,
+        }
+        await websocket.send(json.dumps(event))
+        # Receive and process moves from the first player.
+        await control_sections(sections, curr, professor_connection, student_connections)
+    finally:
+        del SESSIONS[session_key]
 
 async def handler(websocket):
     """
@@ -89,6 +133,9 @@ async def handler(websocket):
     if event.type == "join_lecture":
         # Student joining session
         await join(websocket, event["session"], event["name"])
+    elif event.type == "init_lecture":
+        await start(event['sections'])
+
 
 async def health_check(path, request_headers):
     """
