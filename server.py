@@ -128,6 +128,7 @@ async def control_sections(sections, curr, professor_connection, student_connect
                 "sections": below_3
             }
             await professor_connection.send(json.dumps(event))
+            return
         
 
 
