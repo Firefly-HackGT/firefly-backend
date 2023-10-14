@@ -43,12 +43,12 @@ async def rate(websocket, index, students_ratings, name, professor_connection):
         event = json.loads(message)
         students_ratings[name][index] = event['rating']
         section_ratings = [student_rating[index] for student_rating in students_ratings.values()]
-        average_rating = sum(section_ratings) / len(section_ratings)
+        average_rating = round(sum(section_ratings) / len(section_ratings), 1)
         event = {
             "type": "new_overall_rating",
             "overall_rating": average_rating
         }
-        professor_connection.send(json.dumps(event))
+        await professor_connection.send(json.dumps(event))
 
 
 async def join(websocket, session_key, name):
@@ -69,30 +69,65 @@ async def join(websocket, session_key, name):
         await error(websocket, "RepeatName")
         return
     # Register to receive when the professor changes sections.
-    student_connections.add(websocket)
+    student_connections[name] = websocket
     try:
         # Send the current section the lecture is in.
         await get_current_section(websocket, sections[curr_section_index], curr_section_index, len(sections))
         # Receive and process rating from student.
         await rate(websocket, curr_section_index, student_ratings, name, professor_connection)
     finally:
-        student_connections.remove(websocket)
+        del student_connections[name]
 
-async def control_sections(sections, curr, professor_connection, student_connections):
+async def control_sections(sections, curr, professor_connection, student_connections, student_ratings):
     """
     Receive and move to the next section of the professor.
     
     """
     async for message in professor_connection:
         curr += 1
-        event = {
-            "type": "next_section",
-            "name": sections[curr]['name'],
-            "description": sections[curr]['description'],
-            "curr": curr,
-            "length": len(sections)
-        }
-        websockets.broadcast(student_connections, json.dumps(event))
+        if curr < len(sections):
+            event = {
+                "type": "next_section",
+                "name": sections[curr]['name'],
+                "description": sections[curr]['description'],
+                "curr": curr,
+                "length": len(sections)
+            }   
+            websockets.broadcast(student_connections.values(), json.dumps(event))
+        else:
+            # If the sections are over send to students and prof sections < 3 rating
+            for student_name in student_connections.keys():
+                below_3 = []
+                for index, section_rating in enumerate(student_ratings[student_name]):
+                    if section_rating < 3:
+                        section_info = {}
+                        section_info['section_num'] = index
+                        section_info['section'] = sections[index]
+                        section_info['rating'] = section_rating
+                        below_3.append(section_info)
+                event = {
+                    "type": "final_results",
+                    "sections": below_3
+                }
+                await student_connections[student_name].send(json.dumps(event))
+            average_ratings = [1]*len(sections)
+            for index in range(len(sections)):
+                section_ratings = [student_rating[index] for student_rating in student_ratings.values()]
+                average_ratings[index] = sum(section_ratings) / len(section_ratings)
+            below_3 = []
+            for index, average_rating in enumerate(average_ratings):
+                if round(average_rating, 1) < 3:
+                    section_info = {}
+                    section_info['section_num'] = index
+                    section_info['section'] = sections[index]
+                    section_info['rating'] = round(average_rating, 1)
+                    below_3.append()
+            event = {
+                "type": "final_results",
+                "sections": below_3
+            }
+            await professor_connection.send(json.dumps(event))
+        
 
 
 async def start_lecture(websocket, sections):
@@ -117,7 +152,7 @@ async def start_lecture(websocket, sections):
         }
         await websocket.send(json.dumps(event))
         # Receive and process moves from the first player.
-        await control_sections(sections, curr, professor_connection, student_connections)
+        await control_sections(sections, curr, professor_connection, student_connections, student_ratings)
     finally:
         del SESSIONS[session_key]
 
