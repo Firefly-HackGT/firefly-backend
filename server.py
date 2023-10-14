@@ -93,7 +93,12 @@ async def control_sections(lecture, professor_connection, student_connections, s
     
     """
     async for message in professor_connection:
-        lecture['curr_section'] += 1
+        if event['type'] == 'back':
+            if lecture['curr_section'] == 0:
+                continue
+            lecture['curr_section'] -= 1
+        else:    
+            lecture['curr_section'] += 1
         if lecture['curr_section'] < len(lecture['sections']):
             event = {
                 "type": "next_section",
