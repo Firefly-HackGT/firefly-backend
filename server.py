@@ -112,8 +112,11 @@ async def control_sections(sections, curr, professor_connection, student_connect
                 await student_connections[student_name].send(json.dumps(event))
             average_ratings = [1]*len(sections)
             for index in range(len(sections)):
-                section_ratings = [student_rating[index] for student_rating in student_ratings.values()]
-                average_ratings[index] = sum(section_ratings) / len(section_ratings)
+                if len(student_ratings.values()) == 0:
+                    average_ratings[index] = 0
+                else:
+                    section_ratings = [student_rating[index] for student_rating in student_ratings.values()]
+                    average_ratings[index] = sum(section_ratings) / len(section_ratings)
             below_3 = []
             for index, average_rating in enumerate(average_ratings):
                 if round(average_rating, 1) < 3:
