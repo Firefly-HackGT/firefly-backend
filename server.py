@@ -72,6 +72,14 @@ async def join(websocket, session_key, name):
     # Register to receive when the professor changes sections.
     student_connections[name] = websocket
     try:
+        #Update overall_rating when student first joins
+        section_ratings = [student_rating[lecture['curr_section']] for student_rating in student_ratings.values()]
+        average_rating = round(sum(section_ratings) / len(section_ratings), 1)
+        event = {
+            "type": "new_overall_rating",
+            "overall_rating": average_rating
+        }
+        await professor_connection.send(json.dumps(event))
         # Send the current section the lecture is in.
         await get_current_section(websocket, lecture['sections'][lecture['curr_section']], lecture['curr_section'], len(lecture['sections']))
         # Receive and process rating from student.
@@ -102,8 +110,8 @@ async def control_sections(lecture, professor_connection, student_connections, s
                 for index, section_rating in enumerate(student_ratings[student_name]):
                     if section_rating < 3:
                         section_info = {}
-                        section_info['section_num'] = lecture['curr_section']
-                        section_info['section'] = lecture['sections'][lecture['curr_section']]
+                        section_info['section_num'] = index
+                        section_info['section'] = lecture['sections'][index]
                         section_info['rating'] = section_rating
                         below_3.append(section_info)
                 event = {
@@ -121,7 +129,7 @@ async def control_sections(lecture, professor_connection, student_connections, s
                 if round(average_rating, 1) < 3:
                     section_info = {}
                     section_info['section_num'] = index
-                    section_info['section'] = lecture['sections'][lecture['curr_section']]
+                    section_info['section'] = lecture['sections'][index]
                     section_info['rating'] = round(average_rating, 1)
                     below_3.append(section_info)
             event = {
