@@ -45,7 +45,8 @@ async def rate(websocket, lecture, students_ratings, name, professor_connection)
         average_rating = round(sum(section_ratings) / len(section_ratings), 1)
         event = {
             "type": "new_overall_rating",
-            "overall_rating": average_rating
+            "overall_rating": average_rating,
+            "num_students": len(students_ratings)
         }
         await professor_connection.send(json.dumps(event))
 
@@ -76,7 +77,8 @@ async def join(websocket, session_key, name):
         average_rating = round(sum(section_ratings) / len(section_ratings), 1)
         event = {
             "type": "new_overall_rating",
-            "overall_rating": average_rating
+            "overall_rating": average_rating,
+            "num_students": len(student_ratings)
         }
         await professor_connection.send(json.dumps(event))
         # Send the current section the lecture is in.
@@ -114,7 +116,8 @@ async def control_sections(lecture, professor_connection, student_connections, s
             average_rating = round(sum(section_ratings) / len(section_ratings), 1)
             event = {
                 "type": "new_overall_rating",
-                "overall_rating": average_rating
+                "overall_rating": average_rating,
+                "num_students": len(student_ratings)
             }
             await professor_connection.send(json.dumps(event))
         else:
