@@ -3,7 +3,6 @@ import http
 import secrets
 import signal
 import json
-from Section import Section
 
 import websockets
 
@@ -46,7 +45,8 @@ async def rate(websocket, lecture, students_ratings, name, professor_connection)
         average_rating = round(sum(section_ratings) / len(section_ratings), 1)
         event = {
             "type": "new_overall_rating",
-            "overall_rating": average_rating
+            "overall_rating": average_rating,
+            "num_students": len(students_ratings)
         }
         await professor_connection.send(json.dumps(event))
 
@@ -72,6 +72,15 @@ async def join(websocket, session_key, name):
     # Register to receive when the professor changes sections.
     student_connections[name] = websocket
     try:
+        #Update overall_rating when student first joins
+        section_ratings = [student_rating[lecture['curr_section']] for student_rating in student_ratings.values()]
+        average_rating = round(sum(section_ratings) / len(section_ratings), 1)
+        event = {
+            "type": "new_overall_rating",
+            "overall_rating": average_rating,
+            "num_students": len(student_ratings)
+        }
+        await professor_connection.send(json.dumps(event))
         # Send the current section the lecture is in.
         await get_current_section(websocket, lecture['sections'][lecture['curr_section']], lecture['curr_section'], len(lecture['sections']))
         # Receive and process rating from student.
@@ -85,16 +94,34 @@ async def control_sections(lecture, professor_connection, student_connections, s
     
     """
     async for message in professor_connection:
-        lecture['curr_section'] += 1
+        event = json.loads(message)
+        if event['type'] == 'back':
+            if lecture['curr_section'] == 0:
+                continue
+            lecture['curr_section'] -= 1
+        else:    
+            lecture['curr_section'] += 1
         if lecture['curr_section'] < len(lecture['sections']):
+            for student_name in student_connections.keys():
+                event = {
+                    "type": "next_section",
+                    "name": lecture['sections'][lecture['curr_section']]['name'],
+                    "description": lecture['sections'][lecture['curr_section']]['description'],
+                    "rating":student_ratings[student_name][lecture['curr_section']],
+                    "curr": lecture['curr_section'],
+                    "length": len(lecture['sections'])
+                }   
+                await student_connections[student_name].send(json.dumps(event))
+            section_ratings = [student_rating[lecture['curr_section']] for student_rating in student_ratings.values()]
+            average_rating = 0
+            if len(section_ratings) > 0:
+                average_rating = round(sum(section_ratings) / len(section_ratings), 1)
             event = {
-                "type": "next_section",
-                "name": lecture['sections'][lecture['curr_section']]['name'],
-                "description": lecture['sections'][lecture['curr_section']]['description'],
-                "curr": lecture['curr_section'],
-                "length": len(lecture['sections'])
-            }   
-            websockets.broadcast(student_connections.values(), json.dumps(event))
+                "type": "new_overall_rating",
+                "overall_rating": average_rating,
+                "num_students": len(student_ratings)
+            }
+            await professor_connection.send(json.dumps(event))
         else:
             # If the sections are over send to students and prof sections < 3 rating
             for student_name in student_connections.keys():
@@ -102,8 +129,8 @@ async def control_sections(lecture, professor_connection, student_connections, s
                 for index, section_rating in enumerate(student_ratings[student_name]):
                     if section_rating < 3:
                         section_info = {}
-                        section_info['section_num'] = lecture['curr_section']
-                        section_info['section'] = lecture['sections'][lecture['curr_section']]
+                        section_info['section_num'] = index
+                        section_info['section'] = lecture['sections'][index]
                         section_info['rating'] = section_rating
                         below_3.append(section_info)
                 event = {
@@ -116,17 +143,15 @@ async def control_sections(lecture, professor_connection, student_connections, s
                 for index in range(len(lecture['sections'])):
                     section_ratings = [student_rating[index] for student_rating in student_ratings.values()]
                     average_ratings[index] = sum(section_ratings) / len(section_ratings)
-            below_3 = []
+            sections_info = []
             for index, average_rating in enumerate(average_ratings):
-                if round(average_rating, 1) < 3:
-                    section_info = {}
-                    section_info['section_num'] = index
-                    section_info['section'] = lecture['sections'][lecture['curr_section']]
-                    section_info['rating'] = round(average_rating, 1)
-                    below_3.append(section_info)
+                section_info = {}
+                section_info['section'] = lecture['sections'][index]
+                section_info['rating'] = round(average_rating, 1)
+                sections_info.append(section_info)
             event = {
                 "type": "final_results",
-                "sections": below_3
+                "sections": sections_info
             }
             await professor_connection.send(json.dumps(event))
             return
