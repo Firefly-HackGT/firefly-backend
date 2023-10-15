@@ -217,7 +217,9 @@ async def start_lecture(websocket, sections, lecture_name, prof_name):
     finally:
         del SESSIONS[session_key]
 async def send_hist_data(websocket, person_type, name):
-    event = {}
+    event = {
+        "type":"hist_data"
+    }
     if person_type == 'Professor':
         event['lectures'] = get_professor_lectures(name)
     else:
