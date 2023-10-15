@@ -5,6 +5,7 @@ import signal
 import json
 
 import websockets
+from pymongo_user_functions import add_student_lecture
 
 SESSIONS = {}
 
@@ -187,6 +188,9 @@ async def start_lecture(websocket, sections):
     finally:
         del SESSIONS[session_key]
 
+async def add_data(name, lecture):
+    add_student_lecture(name, lecture)
+
 async def handler(websocket):
     """
     Handle a connection and dispatch it according to who is connecting.
@@ -201,6 +205,9 @@ async def handler(websocket):
         await join(websocket, event["session"], event["name"])
     elif event['type'] == "init_lecture":
         await start_lecture(websocket, event['sections'])
+    elif event['type'] == "data":
+        add_data(event['name'], {})
+        await websocket.wait_closed()
 
 
 async def health_check(path, request_headers):
