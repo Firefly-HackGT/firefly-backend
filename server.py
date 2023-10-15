@@ -85,6 +85,11 @@ async def join(websocket, session_key, name):
         }
         await professor_connection.send(json.dumps(event))
         # Send the current section the lecture is in.
+        print(student_ratings[name][lecture['curr_section']])
+        print(lecture['sections'][lecture['curr_section']])
+        print(lecture['curr_section'])
+        print(lecture['name'])
+        print(len(lecture['sections']))
         await get_current_section(websocket, student_ratings[name][lecture['curr_section']], lecture['sections'][lecture['curr_section']], lecture['curr_section'], lecture['name'], len(lecture['sections']))
         # Receive and process rating from student.
         await rate(websocket, lecture, student_ratings, name, professor_connection)
