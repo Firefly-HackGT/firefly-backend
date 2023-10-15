@@ -222,6 +222,7 @@ async def handler(websocket):
             ]
         }
         add_data("Mike", lecture)
+        print('Done')
         await websocket.wait_closed()
 
 

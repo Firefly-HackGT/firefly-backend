@@ -34,11 +34,12 @@ def add_student_lecture(name, lecture):
       { "$addToSet": { "lectures": lecture } }
    )
    if updateResult.matched_count == 0:
-      new_student = {
-         "name" : name,
-         "lectures" : [lecture]
-      }
-      cname.insert_one(new_student)
+        new_student = {
+        "name" : name,
+        "lectures" : [lecture]
+        }
+        print("new student")
+        cname.insert_one(new_student)
    
 
 def get_professor_lectures(name):
