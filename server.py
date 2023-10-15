@@ -165,7 +165,7 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
             sections_info = []
             for index, average_rating in enumerate(average_ratings):
                 db_lecture['sections'][index] = {
-                    "name": lecture['section'][index]['name'],
+                    "name": lecture['sections'][index]['name'],
                     "description": lecture['sections'][index]['description'],
                     "rating": round(average_rating, 1)
                 }
