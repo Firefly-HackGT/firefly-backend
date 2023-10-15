@@ -206,7 +206,22 @@ async def handler(websocket):
     elif event['type'] == "init_lecture":
         await start_lecture(websocket, event['sections'])
     elif event['type'] == "data":
-        add_data(event['name'], {})
+        lecture = {
+            "name" : "Lecture 2",
+            "topics" : [
+                {
+                    "name" : "Topic 1",
+                    "description" : "Desc 1",
+                    "rating" : 1
+                },
+            {
+                "name" : "Topic 2",
+                "description" : "Desc 2",
+                "rating" : 2 
+            }
+            ]
+        }
+        add_data("Mike", lecture)
         await websocket.wait_closed()
 
 
