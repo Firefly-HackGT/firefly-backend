@@ -64,7 +64,7 @@ async def join(websocket, session_key, name):
         professor_connection, student_connections, lecture, student_ratings = SESSIONS[session_key]
         if name in student_ratings:
             raise LookupError() 
-        student_ratings[name] = [1]*len(lecture['sections'])
+        student_ratings[name] = [0]*len(lecture['sections'])
     
     except KeyError:
         await error(websocket, "LectureNotFound")
