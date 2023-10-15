@@ -143,7 +143,8 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
                     if section_rating < 3:
                         section_info = {}
                         section_info['section_num'] = index
-                        section_info['section'] = lecture['sections'][index]
+                        section_info['name'] = lecture['sections'][index]['name']
+                        section_info['description'] = lecture['sections'][index]['description']
                         section_info['rating'] = section_rating
                         below_3.append(section_info)
                 event = {
@@ -169,7 +170,8 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
                     "rating": round(average_rating, 1)
                 }
                 section_info = {}
-                section_info['section'] = lecture['sections'][index]
+                section_info['name'] = lecture['sections'][index]['name']
+                section_info['description'] = lecture['sections'][index]['description']
                 section_info['rating'] = round(average_rating, 1)
                 sections_info.append(section_info)
             event = {

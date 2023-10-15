@@ -38,7 +38,6 @@ def add_student_lecture(name, lecture):
         "name" : name,
         "lectures" : [lecture]
         }
-        print("new student")
         cname.insert_one(new_student)
    
 
