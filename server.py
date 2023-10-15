@@ -5,7 +5,7 @@ import signal
 import json
 
 import websockets
-from pymongo_user_functions import add_student_lecture, add_professor_lecture
+from pymongo_user_functions import add_student_lecture, add_professor_lecture, get_professor_lectures, get_student_lectures
 
 SESSIONS = {}
 
@@ -211,7 +211,14 @@ async def start_lecture(websocket, sections, lecture_name, prof_name):
         await control_sections(lecture, prof_name, professor_connection, student_connections, student_ratings)
     finally:
         del SESSIONS[session_key]
-
+async def send_hist_data(websocket, person_type, name):
+    event = {}
+    if person_type == 'Professor':
+        event['lectures'] = get_professor_lectures(name)
+    else:
+        event['lectures'] = get_student_lectures(name)
+    await websocket.send(json.dumps(event))
+ 
 async def handler(websocket):
     """
     Handle a connection and dispatch it according to who is connecting.
@@ -225,7 +232,10 @@ async def handler(websocket):
         # Student joining session
         await join(websocket, event["session"], event["name"])
     elif event['type'] == "init_lecture":
-        await start_lecture(websocket, event['sections'], "CHANGE LECTURE_NAME", "CHANGE PROF_NAME")
+        await start_lecture(websocket, event['sections'], event['lecture_name'], event['prof_name'])
+    elif event['type'] == 'get_hist_data':
+        await send_hist_data(websocket, event['person_type'], event['name'])
+        await websocket.wait_closed()
 
 
 async def health_check(path, request_headers):
