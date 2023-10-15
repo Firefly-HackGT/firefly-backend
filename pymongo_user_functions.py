@@ -42,7 +42,8 @@ def add_student_lecture(name, lecture):
    
 
 def get_professor_lectures(name):
-   return name
+   professor = get_database()["Professors"].find({"name" : name})[0]
+   return professor["lectures"]
    
 def professor_exists(name):
    return name
