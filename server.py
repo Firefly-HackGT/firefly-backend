@@ -129,7 +129,7 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
         else:
             # If the sections are over send to students < 3 ratings and prof sections overal_ratings
             for student_name in student_connections.keys():
-                below_3 = []
+                sections_info = []
                 db_lecture = {
                     "name": lecture['name'],
                     "sections": [None]*len(lecture['sections'])
@@ -140,16 +140,14 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
                         "description": lecture['sections'][index]['description'],
                         "rating": section_rating
                     }
-                    if section_rating < 3:
-                        section_info = {}
-                        section_info['section_num'] = index
-                        section_info['name'] = lecture['sections'][index]['name']
-                        section_info['description'] = lecture['sections'][index]['description']
-                        section_info['rating'] = section_rating
-                        below_3.append(section_info)
+                    section_info = {}
+                    section_info['name'] = lecture['sections'][index]['name']
+                    section_info['description'] = lecture['sections'][index]['description']
+                    section_info['rating'] = section_rating
+                    sections_info.append(section_info)
                 event = {
                     "type": "final_results",
-                    "sections": below_3
+                    "sections": sections_info
                 }
                 await student_connections[student_name].send(json.dumps(event))
                 add_student_lecture(student_name, db_lecture)
