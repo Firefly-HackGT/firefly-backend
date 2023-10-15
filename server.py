@@ -122,7 +122,7 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
                 average_rating = round(sum(section_ratings) / len(section_ratings), 1)
             event = {
                 "type": "new_overall_rating",
-                "overall_rating": average_rating,
+                "overall_rating": round(average_rating, 1),
                 "num_students": len(student_ratings)
             }
             await professor_connection.send(json.dumps(event))
@@ -165,7 +165,7 @@ async def control_sections(lecture, prof_name, professor_connection, student_con
             sections_info = []
             db_lecture = {
                     "name": lecture['name'],
-                    "avg_rating":overall_average_rating,
+                    "avg_rating": round(overall_average_rating, 1),
                     "sections": [None]*len(lecture['sections'])
                 }
             for index, average_rating in enumerate(average_ratings):
