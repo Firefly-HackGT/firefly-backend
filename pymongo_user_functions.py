@@ -53,4 +53,14 @@ def professor_exists(name):
    return True
 
 def add_professor_lecture(name, lecture):
-   return
+   cname = get_database()["Professors"]
+   updateResult = cname.update_one( 
+      { "name": name },
+      { "$addToSet": { "lectures": lecture } }
+   )
+   if updateResult.matched_count == 0:
+      new_professor = {
+         "name" : name,
+         "lectures" : [lecture]
+      }
+      cname.insert_one(new_professor)
