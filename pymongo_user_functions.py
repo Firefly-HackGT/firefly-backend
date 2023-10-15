@@ -46,7 +46,11 @@ def get_professor_lectures(name):
    return professor["lectures"]
    
 def professor_exists(name):
-   return name
+   try:
+      professor = get_database()["Professors"].find({"name" : name})[0]
+   except IndexError:
+      return False
+   return True
 
 def add_professor_lecture(name, lecture):
    return
