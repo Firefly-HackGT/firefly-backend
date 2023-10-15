@@ -188,7 +188,7 @@ async def start_lecture(websocket, sections):
     finally:
         del SESSIONS[session_key]
 
-async def add_data(name, lecture):
+def add_data(name, lecture):
     add_student_lecture(name, lecture)
 
 async def handler(websocket):
@@ -221,6 +221,7 @@ async def handler(websocket):
             }
             ]
         }
+        print('started')
         add_data("Mike", lecture)
         print('Done')
         await websocket.wait_closed()
